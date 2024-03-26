@@ -4,6 +4,11 @@ from pydantic import BaseModel, EmailStr, constr, model_validator
 from starlette import status
 
 
+class Verification(BaseModel):
+
+    verify_token: str
+
+
 class UserToken(BaseModel):
 
     email_or_phone: str
@@ -19,25 +24,26 @@ class UserBase(BaseModel):
 
 class UserAuth(UserBase):
     password: constr(min_length=8)
+    password_repeat: constr(min_length=8)
 
     class Config:
         json_schema_extra = {
             "example": {
                 "full_name": "Name LastName",
-                "email": "sample@sample.com",
+                "email": "sample@email.com",
                 "phone": "+79998887766",
-                "password": "My2verystrongpa$$word",
+                "password": "UpperChar$imbo1",
+                "password_repeat": "My2verystrongpa$$word",
             }
         }
 
-    #@model_validator(mode='before')
-    #@classmethod
-    #def hashed_password_validation(cls, v):
-    #    if not any(char.isupper() for char in v['hashed_password']):
-    #        raise ValueError('Пароль должен содержать заглавную букву!')
-    #    if not any(char in '$%&!:.' for char in v['hashed_password']):
-    #        raise ValueError('Пароль должен содержать один из специальных символов: $%&!:.')
-    #    return v
+    @model_validator(mode='before')
+    def hashed_password_validation(self, v):
+        if not any(char.isupper() for char in v['password']):
+            raise ValueError('Пароль должен содержать заглавную букву!')
+        if not any(char in '$%&!:.' for char in v['password']):
+            raise ValueError('Пароль должен содержать специальный символ: $%&!:.')
+        return v
 
 
 class UserAll(UserBase):
@@ -46,6 +52,18 @@ class UserAll(UserBase):
     is_superuser: bool = False
     is_verified: bool = False
     access_token: str = None
+
+
+class UserIsActive(BaseModel):
+    is_active: bool
+
+
+class UserIsVerified(BaseModel):
+    is_verified: bool
+
+
+class UserIsStaff(BaseModel):
+    is_staff: bool
 
 
 class UserInDB(UserAll):

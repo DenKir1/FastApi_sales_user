@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS "user" (
     "is_superuser" BOOL NOT NULL  DEFAULT False
 );
 COMMENT ON TABLE "user" IS 'The User model';
+CREATE TABLE IF NOT EXISTS "basket" (
+    "id" SERIAL NOT NULL PRIMARY KEY,
+    "user_id" INT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
+);
+COMMENT ON TABLE "basket" IS 'The Basket model';
 CREATE TABLE IF NOT EXISTS "product" (
     "id" SERIAL NOT NULL PRIMARY KEY,
     "name" VARCHAR(255) NOT NULL UNIQUE,
@@ -31,12 +36,13 @@ CREATE TABLE IF NOT EXISTS "product" (
     "is_active" BOOL NOT NULL  DEFAULT True
 );
 COMMENT ON TABLE "product" IS 'The Product model';
-CREATE TABLE IF NOT EXISTS "basket" (
+CREATE TABLE IF NOT EXISTS "deal" (
     "id" SERIAL NOT NULL PRIMARY KEY,
-    "products_id" INT NOT NULL REFERENCES "product" ("id") ON DELETE CASCADE,
-    "user_id" INT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE
+    "count" INT NOT NULL,
+    "basket_id" INT NOT NULL REFERENCES "basket" ("id") ON DELETE CASCADE,
+    "product_id" INT NOT NULL REFERENCES "product" ("id") ON DELETE CASCADE
 );
-COMMENT ON TABLE "basket" IS 'The Basket model';"""
+COMMENT ON TABLE "deal" IS 'The Deal model';"""
 
 
 async def downgrade(db: BaseDBAsyncClient) -> str:

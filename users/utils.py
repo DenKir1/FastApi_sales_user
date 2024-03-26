@@ -13,8 +13,30 @@ from users.schemas import TokenPayload
 
 from fastapi import Request, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import FastAPI
+from starlette.responses import JSONResponse
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+from pydantic import EmailStr, BaseModel
+from typing import List
+import config
+
+
+conf = ConnectionConfig(
+    MAIL_USERNAME=config.EMAIL_HOST_USER,
+    MAIL_PASSWORD=config.EMAIL_HOST_PASSWORD,
+    MAIL_FROM=config.EMAIL_HOST_USER,
+    MAIL_PORT=config.EMAIL_PORT,
+    MAIL_SERVER=config.EMAIL_HOST,
+    MAIL_FROM_NAME="Onion Store FastApi",
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=True,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True,
+)
+
 
 JWT_SECRET_KEY = config.JWT_SECRET_KEY
+VERIFY_SECRET_KEY = config.VERIFY_SECRET_KEY
 ALGORITHM = config.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = config.ACCESS_TOKEN_EXPIRE_MINUTES
 
@@ -84,4 +106,23 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(o
             detail="Inactive user",
         )
     return user
+
+
+def create_jwt_for_verify_email(email) -> str:
+    expires_delta = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode = {"exp": expires_delta, "sub": str(email)}
+    secret = jwt.encode(to_encode, VERIFY_SECRET_KEY, ALGORITHM)
+    print(secret)
+    return secret
+
+
+async def get_user_verify(token: str) -> User:
+    try:
+        payload = jwt.decode(token, VERIFY_SECRET_KEY, algorithms=[ALGORITHM])
+        token_data = TokenPayload(**payload)
+        if datetime.fromtimestamp(token_data.exp) > datetime.now():
+            user = await User.get(email=token_data.sub)
+            return user
+    except Exception:
+        raise HTTPException(status_code=404, detail=f"User not found")
 

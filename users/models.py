@@ -23,7 +23,7 @@ class User(models.Model):
 
 
 Tortoise.init_models(["users.models", "sales.models"], "models")
-# Now lets try again
-UserPydantic = pydantic_model_creator(User, exclude=("hashed_password", "is_active", "is_verified", "is_superuser"))
+
+UserPydantic = pydantic_model_creator(User, exclude=("hashed_password",))
 UserPydanticFull = pydantic_model_creator(User)
-UserListPydantic = pydantic_queryset_creator(User)
+UserListPydantic = pydantic_queryset_creator(User, exclude=("hashed_password",))
