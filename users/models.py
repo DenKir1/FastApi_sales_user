@@ -17,6 +17,9 @@ class User(models.Model):
     is_staff = fields.BooleanField(default=False)
     is_superuser = fields.BooleanField(default=False)
 
+    class Meta:
+        ordering = ["id"]
+
     class PydanticMeta:
         #exclude = ["hashed_password", "is_active", "is_verified", "is_superuser"]
         pass

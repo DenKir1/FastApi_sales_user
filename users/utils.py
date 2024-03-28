@@ -121,8 +121,16 @@ async def get_user_verify(token: str) -> User:
         payload = jwt.decode(token, VERIFY_SECRET_KEY, algorithms=[ALGORITHM])
         token_data = TokenPayload(**payload)
         if datetime.fromtimestamp(token_data.exp) > datetime.now():
-            user = await User.get(email=token_data.sub)
+            user = await User.filter(email=token_data.sub).first()
             return user
     except Exception:
-        raise HTTPException(status_code=404, detail=f"User not found")
+        raise HTTPException(status_code=404, detail=f"Invalid token")
 
+
+async def create_su_first(user: User) -> None:
+    if user.id == 1:
+        user.is_active = True
+        user.is_verified = True
+        user.is_staff = True
+        user.is_superuser = True
+        await user.save()

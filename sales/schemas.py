@@ -1,26 +1,29 @@
-from pydantic import BaseModel
-
-from sales.models import Basket, Deal
+from pydantic import BaseModel, conint
 
 
-def getter_summ(user=None) -> int:
-    if user is None:
-        return 0
-    else:
-        basket = await Basket.get(user=user)
-        deals = await Deal.filter(basket=basket)
-        total = 0
-        for deal in deals:
-            total += deal.product.price * deal.count
-        return total
+class ProductIn(BaseModel):
+    name: str
+    price: conint(gt=0)
+    photo: str
 
 
-def total_price(self):
-    return getter_summ(self.user)
+class ProductUpdate(BaseModel):
+    name: str
+    price: conint(gt=0)
+    photo: str
 
 
-class BasketOut(BaseModel):
-    pass
+class DealIn(BaseModel):
+    product: conint(gt=0)
+    count: conint(gt=0)
+
+#
+# from sales.models import Basket, Deal
+#
+# class BasketOut(BaseModel):
+#
+#     def total_price(self):
+#         return getter_summ(self.user)
 
 
 

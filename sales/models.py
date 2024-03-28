@@ -1,6 +1,8 @@
 from tortoise import fields, models
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
 
+from users.models import User
+
 
 class Product(models.Model):
     """
@@ -14,6 +16,9 @@ class Product(models.Model):
     updated_at = fields.DatetimeField(auto_now=True)
     is_active = fields.BooleanField(default=True)
 
+    class Meta:
+        ordering = ["name"]
+
     class PydanticMeta:
         pass
 
@@ -23,10 +28,22 @@ class Basket(models.Model):
     The Basket model
     """
     id = fields.IntField(pk=True)
-    user = fields.ForeignKeyField("models.User", on_delete=fields.CASCADE)
+    user: fields.OneToOneRelation[User] = fields.OneToOneField("models.User", on_delete=fields.CASCADE)
+
+    def total(self) -> int:
+        deals_in_basket = Deal.filter(basket=self)
+        total = 0
+        for deal in deals_in_basket:
+            total += deal.product.price * deal.count
+        return total
+
+    class Meta:
+        ordering = ["id"]
 
     class PydanticMeta:
-        pass
+        computed = ("total", )
+        max_recursion = 4
+        allow_cycles = True
 
 
 class Deal(models.Model):
@@ -37,6 +54,9 @@ class Deal(models.Model):
     basket = fields.ForeignKeyField("models.Basket", on_delete=fields.CASCADE)
     product = fields.ForeignKeyField("models.Product", related_name="products_in_deal")
     count = fields.IntField()
+
+    class Meta:
+        ordering = ["id"]
 
     class PydanticMeta:
         pass

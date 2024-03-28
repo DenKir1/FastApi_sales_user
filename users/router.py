@@ -9,7 +9,7 @@ from users.schemas import UserAuth, UserAll, UserBase, UserInDB, TokenSchema, St
 from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials
 from users.utils import get_user_by_email_or_phone, get_hashed_password, create_access_token, verify_password, \
-    get_current_user, VERIFY_SECRET_KEY, get_user_verify, conf, create_jwt_for_verify_email
+    get_current_user, VERIFY_SECRET_KEY, get_user_verify, conf, create_jwt_for_verify_email, create_su_first
 
 router = APIRouter(
     prefix="/users",
@@ -17,14 +17,14 @@ router = APIRouter(
 )
 
 
-@router.post("/", summary="Create new user", response_model=UserPydantic)
+@router.post("/register", summary="Create new user", response_model=UserPydantic)
 async def create_user(data: UserAuth):
-    user = await User.filter(email=data.email).first()
-    if data.password != data.password_repeat:
+    if data.password != data.password_confirm:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password and Password_repeat don't same"
+            detail="Password and Password_confirm don't same"
         )
+    user = await User.filter(email=data.email).first()
     if user is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -37,6 +37,7 @@ async def create_user(data: UserAuth):
              phone=data.phone,
              hashed_password=get_hashed_password(data.password),
          )
+        await create_su_first(user_obj)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_418_IM_A_TEAPOT,
@@ -80,7 +81,7 @@ async def simple_send(current_user: User = Depends(get_current_user)):
         Status(status_code="Bad", detail=f" Something wrong {ex}")
 
 
-@router.delete("/{user_id}", summary='Delete User for Admin or Owner', response_model=Status)
+@router.delete("/delete/{user_id}", summary='Delete User for Admin or Owner', response_model=Status)
 async def delete_user(user_id: int, current_user: User = Depends(get_current_user)):
     if current_user.is_superuser or user_id == current_user.id:
         deleted_account = await User.filter(id=user_id).delete()
@@ -91,16 +92,20 @@ async def delete_user(user_id: int, current_user: User = Depends(get_current_use
     return Status(status_code="OK", detail=f" User {user_id} deleted")
 
 
-@router.put("/{user_id}", summary='Update User for Admin or Owner', response_model=UserPydantic)
+@router.put("/update/{user_id}", summary='Update User for Admin or Owner', response_model=UserPydantic)
 async def update_user(user_id: int, data: UserBase, current_user: User = Depends(get_current_user)):
     if current_user.is_superuser or user_id == current_user.id:
-        await User.filter(id=user_id).update(**data.model_dump(exclude_unset=True))
+        user = await User.filter(id=user_id).first()
+        if user:
+            await User.filter(id=user_id).update(**data.model_dump(exclude_unset=True))
+            return await UserPydantic.from_queryset_single(User.get(id=user_id))
+        else:
+            raise HTTPException(status_code=404, detail=f"User {user_id} don't found")
     else:
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
-    return await UserPydantic.from_queryset_single(User.get(id=user_id))
 
 
-@router.get("/", summary='Get Users for Staff')
+@router.get("/user_list", summary='Get Users for Staff', response_model=UserListPydantic)
 async def get_users(current_user: User = Depends(get_current_user)):
     if current_user.is_staff:
         return await UserListPydantic.from_queryset(User.all())
@@ -108,10 +113,14 @@ async def get_users(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail=f"{current_user.email} forbidden")
 
 
-@router.get("/{user_id}", summary='Get User for Staff or Owner', response_model=UserPydantic)
+@router.get("/user/{user_id}", summary='Get User for Staff or Owner', response_model=UserPydantic)
 async def get_user(user_id: int, current_user: User = Depends(get_current_user)):
     if current_user.is_staff or user_id == current_user.id:
-        return await UserPydantic.from_queryset_single(User.get(id=user_id))
+        user = await User.filter(id=user_id).first()
+        if user:
+            return await UserPydantic.from_tortoise_orm(user)
+        else:
+            raise HTTPException(status_code=404, detail=f"User {user_id} don't found")
     else:
         raise HTTPException(status_code=403, detail=f"{current_user.email} forbidden")
 
@@ -119,24 +128,22 @@ async def get_user(user_id: int, current_user: User = Depends(get_current_user))
 @router.post("/active/{user_id}", summary='Set User.is_active for Staff', response_model=UserPydantic)
 async def set_is_active(user_id: int, current_user: User = Depends(get_current_user)):
     if current_user.is_staff:
-        user = await User.get(id=user_id)
+        user = await User.filter(id=user_id).first()
         if user:
             if user.is_active:
                 user.is_active = False
             else:
                 user.is_active = True
             await user.save()
+            return await UserPydantic.from_tortoise_orm(user)
         else:
             raise HTTPException(status_code=403, detail=f"User {user_id} isn't found")
     else:
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
-    return await UserPydantic.from_tortoise_orm(user)
 
 
 @router.post("/verify_post", summary='Paste your token for verification email', response_model=Status)
 async def set_is_verify(token: TokenSchema):
-    if token.access_token is None:
-        raise HTTPException(status_code=403, detail=f"Token is empty")
     token_user = await get_user_verify(token.access_token)
     if isinstance(token_user, User):
         if token_user.is_verified:
@@ -145,19 +152,24 @@ async def set_is_verify(token: TokenSchema):
             token_user.is_verified = True
             await token_user.save()
             return Status(status_code="OK", detail=f" User {token_user.email} is verified")
-    return Status(status_code="No", detail=f" Invalid token")
+    else:
+        raise HTTPException(status_code=404, detail=f"Invalid token")
 
 
-@router.post("/super/{user_id}", summary='Set User.is_staff for Admin???', response_model=UserPydantic)
+@router.post("/staff/{user_id}", summary='Set User.is_staff for Admin???', response_model=UserPydantic)
 async def set_is_staff(user_id: int,  current_user: User = Depends(get_current_user)):
     if current_user.is_superuser:
-        user = await User.get(id=user_id)
-        if user.is_staff:
-            user.is_staff = False
+        user = await User.filter(id=user_id).first()
+        if user:
+            if user.is_staff:
+                user.is_staff = False
+            else:
+                user.is_staff = True
+            await user.save()
+            return await UserPydantic.from_tortoise_orm(user)
         else:
-            user.is_staff = True
-        await user.save()
+            raise HTTPException(status_code=403, detail=f"User {user_id} isn't found")
     else:
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
-    return await UserPydantic.from_tortoise_orm(user)
+
 

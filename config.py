@@ -11,6 +11,7 @@ DB_PASS = getenv("DB_PASS")
 
 DATABASE_URL = f"postgres://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
+
 DATABASE_CONFIG = {
     "connections": {
         "default": DATABASE_URL,
@@ -38,8 +39,10 @@ EMAIL_HOST_USER = getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = getenv('EMAIL_HOST_PASSWORD')
 
 
-#DB_HOST_TEST = os.environ.get("DB_HOST_TEST")
-#DB_PORT_TEST = os.environ.get("DB_PORT_TEST")
-#DB_NAME_TEST = os.environ.get("DB_NAME_TEST")
-#DB_USER_TEST = os.environ.get("DB_USER_TEST")
-#DB_PASS_TEST = os.environ.get("DB_PASS_TEST")
+DB_HOST_TEST = getenv("DB_HOST_TEST")
+DB_PORT_TEST = getenv("DB_PORT_TEST")
+DB_NAME_TEST = getenv("DB_NAME_TEST")
+DB_USER_TEST = getenv("DB_USER_TEST")
+DB_PASS_TEST = getenv("DB_PASS_TEST")
+
+DATABASE_URL_TEST = f"postgres://{DB_USER_TEST}:{DB_PASS_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"

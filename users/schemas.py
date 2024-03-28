@@ -24,26 +24,15 @@ class UserBase(BaseModel):
 
 class UserAuth(UserBase):
     password: constr(min_length=8)
-    password_repeat: constr(min_length=8)
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "full_name": "Name LastName",
-                "email": "sample@email.com",
-                "phone": "+79998887766",
-                "password": "UpperChar$imbo1",
-                "password_repeat": "My2verystrongpa$$word",
-            }
-        }
+    password_confirm: constr(min_length=8)
 
     @model_validator(mode='before')
-    def hashed_password_validation(self, v):
-        if not any(char.isupper() for char in v['password']):
+    def hashed_password_validation(self):
+        if not any(char.isupper() for char in self["password"]):
             raise ValueError('Пароль должен содержать заглавную букву!')
-        if not any(char in '$%&!:.' for char in v['password']):
+        if not any(char in '$%&!:.' for char in self["password"]):
             raise ValueError('Пароль должен содержать специальный символ: $%&!:.')
-        return v
+        return self
 
 
 class UserAll(UserBase):
