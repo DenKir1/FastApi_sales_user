@@ -4,11 +4,7 @@ location = "./migrations"
 src_folder = "./."
 
 [tool.pytest.ini_options]
-pythonpath = [".", ".", ]
-asyncio_mode="auto"
-filterwarnings = [
-    "error",
-    "ignore::UserWarning",
-    # note the use of single quote below to denote "raw" strings in TOML
-    'ignore:function ham\(\) is deprecated:DeprecationWarning',
+pythonpath = [
+  ".", ".",
 ]
+asyncio_mode="auto"

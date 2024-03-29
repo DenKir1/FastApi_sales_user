@@ -1,20 +1,13 @@
 
-from typing import List
-
-from fastapi import APIRouter, FastAPI, Depends
-from fastapi_pagination.bases import AbstractParams
-
-
-from sales.models import Product_Pydantic, ProductIn_Pydantic, Product, Product_List_Pydantic, Deal, Deal_Pydantic, \
-    Basket, DealIn_Pydantic, Basket_Pydantic
-from sales.schemas import ProductIn, ProductUpdate, DealIn
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends
+from sales.models import Product_Pydantic, Product, Deal
+from sales.schemas import ProductIn, DealIn, DealOut
 from starlette.exceptions import HTTPException
-from fastapi_pagination import Page, add_pagination, paginate, Params
+from fastapi_pagination import Page, paginate
 
 from users.models import User
-from users.schemas import Status
 from users.utils import get_current_user
+from sales.utils import total_sum
 
 
 router = APIRouter(
@@ -58,7 +51,7 @@ async def get_product(p_id: int, current_user: User = Depends(get_current_user))
 
 
 @router.put("/{p_id}", summary="Update Product for Staff User", response_model=Product_Pydantic)
-async def update_product(p_id: int, product: ProductUpdate, current_user: User = Depends(get_current_user)):
+async def update_product(p_id: int, product: ProductIn, current_user: User = Depends(get_current_user)):
     if current_user.is_staff:
         prod = await Product.filter(id=p_id).first()
         if prod:
@@ -87,69 +80,64 @@ async def product_is_active(p_id: int, current_user: User = Depends(get_current_
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
 
 
-@router.delete("/{p_id}", summary="Delete Product for Staff User", response_model=Status)
+@router.delete("/{p_id}", summary="Delete Product for Staff User")
 async def delete_product(p_id: int, current_user: User = Depends(get_current_user)):
     if current_user.is_staff:
         deleted_count = await Product.filter(id=p_id).delete()
         if not deleted_count:
             raise HTTPException(status_code=404, detail=f"Product {p_id} not found")
-        return Status(status_code="OK", detail=f"Product {p_id} was deleted ")
+        return HTTPException(status_code=200, detail=f"Product {p_id} was deleted ")
     else:
         raise HTTPException(status_code=403, detail=f"{current_user.email} isn't staff user")
 
 
-@router.post("/basket", summary="Add product in basket for User", response_model=Basket_Pydantic)
-async def add_product(deal: DealIn, current_user: User = Depends(get_current_user)):
+@router.post("/basket", summary="Add product in basket for User",)
+async def add_deal(deal_cur: DealIn, current_user: User = Depends(get_current_user)):
     if current_user:
-        product = await Product.filter(id=deal.product).first()
-        if not product:
-            raise HTTPException(status_code=403, detail=f"Product {deal.product} not found")
-        basket = await Basket.update_or_create(user=current_user)
-        deal = {"basket": basket[0],
-                "product": product,
-                "count": deal.count,
-                }
-        await Deal.create(**deal)
-        return await Basket_Pydantic.from_queryset_single(Basket.get(user=current_user))
+        prod = await Product.filter(id=deal_cur.product).first()
+        if prod:
+            deal_ = {"user": current_user, "product": prod, "count": deal_cur.count}
+            obj = await Deal.create(**deal_)
+            return await DealOut.from_tortoise_orm(obj)
+        else:
+            raise HTTPException(status_code=403, detail=f"Product {deal_cur.product} not found")
     else:
         raise HTTPException(status_code=401, detail=f"{current_user.email} is unauthorized user")
 
 
-@router.get("/basket", summary="Get basket for User", response_model=Basket_Pydantic)
+@router.get("/basket", summary="Get basket for User")
 async def get_basket(current_user: User = Depends(get_current_user)):
     if current_user:
-        basket = await Basket.filter(user=current_user).first()
+        basket = await Deal.filter(user=current_user)
         if basket:
-            return await Basket_Pydantic.from_tortoise_orm(basket)
+            basket_list = await DealOut.from_queryset(basket)
+            tot_sum = total_sum(current_user)
+            return {"basket": basket_list, "total": tot_sum}
         else:
             return HTTPException(status_code=404, detail=f"{current_user.email} basket empty")
     else:
         raise HTTPException(status_code=401, detail=f"{current_user.email} is unauthorized user")
 
 
-@router.delete("/basket", summary="Delete basket for User", response_model=Status)
+@router.delete("/basket", summary="Delete basket for User")
 async def delete_basket(current_user: User = Depends(get_current_user)):
     if current_user:
-        basket = await Basket.filter(user=current_user).first()
-        if basket:
-            await Deal.filter(basket=basket).delete()
-            return Status(message=f"Basket {current_user.email} was deleted ")
+        deleted_item = await Deal.filter(user=current_user).delete()
+        if deleted_item:
+            return HTTPException(status_code=200, detail=f"Basket {current_user.email} was deleted")
         else:
-            return HTTPException(status_code=404, detail=f"{current_user.email} basket empty")
+            return HTTPException(status_code=404, detail=f"{current_user.email} basket is empty")
     else:
         raise HTTPException(status_code=401, detail=f"{current_user.email} is unauthorized user")
 
 
-@router.put("/basket/{d_id}", summary="Delete Deal_id from basket for User", response_model=Basket_Pydantic)
+@router.put("/basket/{d_id}", summary="Delete Deal_id from basket for User")
 async def delete_basket_deal(d_id: int, current_user: User = Depends(get_current_user)):
     if current_user:
-        basket = await Basket.filter(user=current_user).first()
-        if basket:
-            obj = await Deal.filter(basket=basket, id=d_id).delete()
-            if not obj:
-                raise HTTPException(status_code=404, detail=f"Deal {d_id} not found")
-            return await Basket_Pydantic.from_queryset_single(Basket.get(user=current_user))
+        obj = await Deal.filter(user=current_user, id=d_id).delete()
+        if not obj:
+            raise HTTPException(status_code=404, detail=f"Deal {d_id} not found")
         else:
-            return HTTPException(status_code=404, detail=f"{current_user.email} basket empty")
+            return HTTPException(status_code=200, detail=f"deal {d_id} is deleted from basket")
     else:
         raise HTTPException(status_code=401, detail=f"{current_user.email} is unauthorized user")

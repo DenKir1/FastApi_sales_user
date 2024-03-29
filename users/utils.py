@@ -1,23 +1,14 @@
-from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer, OAuth2AuthorizationCodeBearer
+from fastapi import Depends
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import Union, Any
 import jwt
-from pydantic import ValidationError
 from starlette import status
-
-import config
 from users.models import User
 from users.schemas import TokenPayload
-
-from fastapi import Request, HTTPException
+from fastapi import HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import FastAPI
-from starlette.responses import JSONResponse
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-from pydantic import EmailStr, BaseModel
-from typing import List
+from fastapi_mail import ConnectionConfig
 import config
 
 
@@ -112,7 +103,6 @@ def create_jwt_for_verify_email(email) -> str:
     expires_delta = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {"exp": expires_delta, "sub": str(email)}
     secret = jwt.encode(to_encode, VERIFY_SECRET_KEY, ALGORITHM)
-    print(secret)
     return secret
 
 

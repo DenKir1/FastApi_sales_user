@@ -1,5 +1,4 @@
 from tortoise import fields, models
-from tortoise import Tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator, pydantic_queryset_creator
 
 
@@ -21,11 +20,11 @@ class User(models.Model):
         ordering = ["id"]
 
     class PydanticMeta:
-        #exclude = ["hashed_password", "is_active", "is_verified", "is_superuser"]
+        # exclude = ["hashed_password", "is_active", "is_verified", "is_superuser"]
         pass
 
 
-Tortoise.init_models(["users.models", "sales.models"], "models")
+# Tortoise.init_models(["users.models"], "models")
 
 UserPydantic = pydantic_model_creator(User, exclude=("hashed_password",))
 UserPydanticFull = pydantic_model_creator(User)

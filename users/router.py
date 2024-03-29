@@ -1,15 +1,10 @@
-from typing import List, Any
-
 from fastapi_mail import MessageSchema, MessageType, FastMail
-
-from users.models import User, UserPydantic, UserPydanticFull, UserListPydantic
+from users.models import User, UserPydantic, UserListPydantic
 from starlette.exceptions import HTTPException
-from users.schemas import UserAuth, UserAll, UserBase, UserInDB, TokenSchema, Status, UserToken, Verification, \
-    UserIsActive, UserIsVerified, UserIsStaff
+from users.schemas import UserAuth, UserBase, TokenSchema, UserToken
 from fastapi import Depends, HTTPException, status, APIRouter
-from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials
 from users.utils import get_user_by_email_or_phone, get_hashed_password, create_access_token, verify_password, \
-    get_current_user, VERIFY_SECRET_KEY, get_user_verify, conf, create_jwt_for_verify_email, create_su_first
+    get_current_user, get_user_verify, create_jwt_for_verify_email, create_su_first, conf
 
 router = APIRouter(
     prefix="/users",
@@ -76,12 +71,12 @@ async def simple_send(current_user: User = Depends(get_current_user)):
     try:
         # fm = FastMail(conf)
         # await fm.send_message(message)
-        return Status(status_code="OK", detail=f"Letter for {current_user.email} sent with Token- {token}")
+        return HTTPException(status_code=200, detail=f"Letter for {current_user.email} sent with Token- {token}")
     except Exception as ex:
-        Status(status_code="Bad", detail=f" Something wrong {ex}")
+        raise HTTPException(status_code=404, detail=f" Something wrong {ex}")
 
 
-@router.delete("/delete/{user_id}", summary='Delete User for Admin or Owner', response_model=Status)
+@router.delete("/delete/{user_id}", summary='Delete User for Admin or Owner')
 async def delete_user(user_id: int, current_user: User = Depends(get_current_user)):
     if current_user.is_superuser or user_id == current_user.id:
         deleted_account = await User.filter(id=user_id).delete()
@@ -89,7 +84,7 @@ async def delete_user(user_id: int, current_user: User = Depends(get_current_use
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
     if not deleted_account:
         raise HTTPException(status_code=404, detail=f"User {user_id} not found")
-    return Status(status_code="OK", detail=f" User {user_id} deleted")
+    return HTTPException(status_code=200, detail=f"User {user_id} deleted")
 
 
 @router.put("/update/{user_id}", summary='Update User for Admin or Owner', response_model=UserPydantic)
@@ -142,16 +137,16 @@ async def set_is_active(user_id: int, current_user: User = Depends(get_current_u
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
 
 
-@router.post("/verify_post", summary='Paste your token for verification email', response_model=Status)
+@router.post("/verify_post", summary='Paste your token for verification email')
 async def set_is_verify(token: TokenSchema):
     token_user = await get_user_verify(token.access_token)
     if isinstance(token_user, User):
         if token_user.is_verified:
-            return Status(status_code="OK", detail=f" User {token_user.email} has already verified")
+            return HTTPException(status_code=200, detail=f"User {token_user.email} has already verified")
         else:
             token_user.is_verified = True
             await token_user.save()
-            return Status(status_code="OK", detail=f" User {token_user.email} is verified")
+            return HTTPException(status_code=200, detail=f"User {token_user.email} is verified")
     else:
         raise HTTPException(status_code=404, detail=f"Invalid token")
 
@@ -171,5 +166,3 @@ async def set_is_staff(user_id: int,  current_user: User = Depends(get_current_u
             raise HTTPException(status_code=403, detail=f"User {user_id} isn't found")
     else:
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
-
-

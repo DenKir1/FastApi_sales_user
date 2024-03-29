@@ -1,12 +1,4 @@
-from typing import Optional
-
 from pydantic import BaseModel, EmailStr, constr, model_validator
-from starlette import status
-
-
-class Verification(BaseModel):
-
-    verify_token: str
 
 
 class UserToken(BaseModel):
@@ -43,36 +35,11 @@ class UserAll(UserBase):
     access_token: str = None
 
 
-class UserIsActive(BaseModel):
-    is_active: bool
-
-
-class UserIsVerified(BaseModel):
-    is_verified: bool
-
-
-class UserIsStaff(BaseModel):
-    is_staff: bool
-
-
-class UserInDB(UserAll):
-    hashed_password: str
-
-
 class TokenSchema(BaseModel):
     access_token: str
     token_type: str
 
 
-class TokenData(TokenSchema):
-    user: UserBase
-
-
 class TokenPayload(BaseModel):
     sub: str = None
     exp: int = None
-
-
-class Status(BaseModel):
-    status_code: str
-    detail: str
