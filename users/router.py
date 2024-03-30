@@ -59,6 +59,9 @@ async def login_token(form_data: UserToken = Depends(UserToken)):
 
 @router.post("/verify_send", summary="Send key for verification User",)
 async def simple_send(current_user: User = Depends(get_current_user)):
+    if current_user.is_verified:
+        return HTTPException(status_code=200, detail=f"{current_user.email} has already verified")
+
     token = create_jwt_for_verify_email(current_user.email)
     html = f"""<p>{token}</p>"""
 
@@ -71,7 +74,8 @@ async def simple_send(current_user: User = Depends(get_current_user)):
     try:
         # fm = FastMail(conf)
         # await fm.send_message(message)
-        return HTTPException(status_code=200, detail=f"Letter for {current_user.email} sent with Token- {token}")
+        print(token)
+        return HTTPException(status_code=200, detail=f"Letter for {current_user.email} was sent with Token")
     except Exception as ex:
         raise HTTPException(status_code=404, detail=f" Something wrong {ex}")
 
