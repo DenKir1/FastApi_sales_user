@@ -18,7 +18,7 @@ class Product(models.Model):
         ordering = ["name"]
 
     class PydanticMeta:
-        pass
+        exclude = ["products_in_deal", ]
 
 
 class Deal(models.Model):
@@ -26,8 +26,8 @@ class Deal(models.Model):
     The Deal model
     """
     id = fields.IntField(pk=True)
-    user = fields.ForeignKeyField("models.User", on_delete=fields.CASCADE)
-    product = fields.ForeignKeyField("models.Product", related_name="products_in_deal")
+    user = fields.ForeignKeyField("users.User", on_delete=fields.CASCADE)
+    product = fields.ForeignKeyField("sales.Product", related_name="products_in_deal")
     count = fields.IntField()
     price = fields.IntField()
 
@@ -38,10 +38,9 @@ class Deal(models.Model):
         pass
 
 
-# Tortoise.init_models(["sales.models"], "models")
-
-Product_Pydantic = pydantic_model_creator(Product, name="Product")
-ProductIn_Pydantic = pydantic_model_creator(Product, name="ProductIn", exclude_readonly=True)
-Product_List_Pydantic = pydantic_queryset_creator(Product, name="Product_List")
-Deal_Pydantic = pydantic_model_creator(Deal, name="Deal")
-DealIn_Pydantic = pydantic_model_creator(Deal, name="DealIn", exclude_readonly=True)
+Product_Pydantic = pydantic_model_creator(Product)
+ProductIn_Pydantic = pydantic_model_creator(Product, exclude_readonly=False)
+Product_List_Pydantic = pydantic_queryset_creator(Product)
+Deal_Pydantic = pydantic_model_creator(Deal)
+DealIn_Pydantic = pydantic_model_creator(Deal, exclude_readonly=True)
+DealListPydantic = pydantic_queryset_creator(Deal, include=("product_id",), allow_cycles=True)

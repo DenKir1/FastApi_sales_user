@@ -20,12 +20,9 @@ class User(models.Model):
         ordering = ["id"]
 
     class PydanticMeta:
-        # exclude = ["hashed_password", "is_active", "is_verified", "is_superuser"]
-        pass
+        exclude = ["hashed_password", ]
 
 
-# Tortoise.init_models(["users.models"], "models")
-
-UserPydantic = pydantic_model_creator(User, exclude=("hashed_password",))
-UserPydanticFull = pydantic_model_creator(User)
-UserListPydantic = pydantic_queryset_creator(User, exclude=("hashed_password",))
+UserPydantic = pydantic_model_creator(User)
+UserPydanticFull = pydantic_model_creator(User, exclude_readonly=True)
+UserListPydantic = pydantic_queryset_creator(User, include=("id", ))

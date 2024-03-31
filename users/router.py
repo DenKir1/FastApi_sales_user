@@ -1,5 +1,6 @@
+
 from fastapi_mail import MessageSchema, MessageType, FastMail
-from users.models import User, UserPydantic, UserListPydantic
+from users.models import User, UserPydantic
 from starlette.exceptions import HTTPException
 from users.schemas import UserAuth, UserBase, TokenSchema, UserToken
 from fastapi import Depends, HTTPException, status, APIRouter
@@ -42,7 +43,7 @@ async def create_user(data: UserAuth):
 
 
 @router.post("/login", summary="Create access token for user", response_model=TokenSchema)
-async def login_token(form_data: UserToken = Depends(UserToken)):
+async def login_token(form_data: UserToken):
     user = await get_user_by_email_or_phone(form_data.email_or_phone)
     if user is None:
         raise HTTPException(
@@ -72,6 +73,7 @@ async def simple_send(current_user: User = Depends(get_current_user)):
         subtype=MessageType.html)
 
     try:
+        # # Send email for verify user
         # fm = FastMail(conf)
         # await fm.send_message(message)
         print(token)
@@ -104,10 +106,10 @@ async def update_user(user_id: int, data: UserBase, current_user: User = Depends
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
 
 
-@router.get("/user_list", summary='Get Users for Staff', response_model=UserListPydantic)
+@router.get("/user_list", summary='Get Users for Staff')
 async def get_users(current_user: User = Depends(get_current_user)):
     if current_user.is_staff:
-        return await UserListPydantic.from_queryset(User.all())
+        return await UserPydantic.from_queryset(User.all())
     else:
         raise HTTPException(status_code=403, detail=f"{current_user.email} forbidden")
 

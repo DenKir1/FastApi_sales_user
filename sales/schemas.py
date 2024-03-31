@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel, conint
 
 
@@ -7,12 +8,15 @@ class ProductIn(BaseModel):
     photo: str
 
 
-class DealIn(BaseModel):
-    product: conint(gt=0)
-    count: conint(gt=0)
-
-
 class DealOut(BaseModel):
     id: int
-    product: ProductIn
+    user_id: int
+    product_id: int
     count: int
+    price: int
+
+
+class DealIn(BaseModel):
+    product_id: int
+    count: int
+    price: int

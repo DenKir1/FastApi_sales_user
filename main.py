@@ -12,6 +12,4 @@ app.include_router(router_product)
 app.include_router(router_user)
 
 
-# @app.on_event("startup")
-# def register():
 register_tortoise(app=app, config=config.DATABASE_CONFIG, generate_schemas=True, add_exception_handlers=True)

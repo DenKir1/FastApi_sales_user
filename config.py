@@ -11,22 +11,26 @@ DB_PASS = getenv("DB_PASS")
 
 DATABASE_URL = f"postgres://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-
 DATABASE_CONFIG = {
     "connections": {
         "default": DATABASE_URL,
     },
     "apps": {
-        "models": {
-            "models": [
-                "aerich.models",
-                "users.models",
-                "sales.models",
-            ],
+        "aerich": {
+            "models": ["aerich.models"],
+            "default_connection": "default",
+        },
+        "users": {
+            "models": ["users.models"],
+            "default_connection": "default",
+        },
+        "sales": {
+            "models": ["sales.models"],
             "default_connection": "default",
         },
     },
 }
+
 
 JWT_SECRET_KEY = getenv("JWT_SECRET_KEY")
 VERIFY_SECRET_KEY = getenv("VERIFY_SECRET_KEY")

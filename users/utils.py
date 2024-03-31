@@ -118,7 +118,8 @@ async def get_user_verify(token: str) -> User:
 
 
 async def create_su_first(user: User) -> None:
-    if user.id == 1:
+    """Three first users will become admins (need for test)"""
+    if user.id < 4:
         user.is_active = True
         user.is_verified = True
         user.is_staff = True
