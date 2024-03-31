@@ -37,7 +37,7 @@ async def create_product(product: ProductIn, current_user: User = Depends(get_cu
         raise HTTPException(status_code=403, detail=f"{current_user.email} isn't staff user")
 
 
-@router.get("/{id}", summary="Get Product for Authorized User", response_model=Product_Pydantic)
+@router.get("/{p_id}", summary="Get Product for Authorized User", response_model=Product_Pydantic)
 async def get_product(p_id: int, current_user: User = Depends(get_current_user)):
     if current_user:
         prod = await Product.filter(id=p_id).first()

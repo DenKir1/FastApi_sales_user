@@ -1,16 +1,17 @@
 import asyncio
 import pytest
 from asgi_lifespan import LifespanManager
-from httpx import AsyncClient, Headers
+from httpx import AsyncClient
 from main import app
+from users.models import User
 
-#headers = {'Authorization': 'Bearer token_str'}
-headers = Headers({'Authorization': 'Bearer token_str'})
+headers = {'Authorization': 'Bearer token_str'}
+
 u_id = 1
-p_id = 1
-d_id = 1
 u2_id = 1
+p_id = 1
 p2_id = 1
+d_id = 1
 d2_id = 1
 
 test_user = {"full_name": "test",
@@ -64,10 +65,17 @@ async def client():
 @pytest.mark.anyio
 async def test_create_user(client: AsyncClient):
     response = await client.post("/users/register", json=test_user)
+    global u_id
     u_id = response.json()["id"]
     assert response.status_code == 200
+    # Create superuser for tests
+    test_user_admin = await User.get(id=u_id)
+    test_user_admin.is_staff = True
+    test_user_admin.is_superuser = True
+    await test_user_admin.save()
 
     response_2 = await client.post("/users/register", json=test_user_2)
+    global u2_id
     u2_id = response_2.json()["id"]
     assert response_2.status_code == 200
 
@@ -81,7 +89,7 @@ async def test_create_user(client: AsyncClient):
     assert response_5.status_code == 422
 
     response_6 = await client.post("/users/register", json=test_user_passw)
-    assert response_6.status_code == 422
+    assert response_6.status_code == 400
 
 
 @pytest.mark.anyio
@@ -90,41 +98,48 @@ async def test_login_user(client: AsyncClient):
                  "password": test_user["password"]}
     response = await client.post("/users/login", json=data_user)
     access_token = response.json()["access_token"]
-    print(access_token)
-    headers = Headers({'Authorization': f'Bearer {access_token}'})
-    #headers = {'Authorization': f'Bearer {access_token}'}
-    print(headers)
-    assert response.status_code == 250
+    global headers
+    headers = {'Authorization': f'Bearer {access_token}'}
+    assert response.status_code == 200
 
     data_user_2 = {"email_or_phone": test_user["phone"],
                    "password": test_user["password"]}
     response_2 = await client.post("/users/login", json=data_user_2)
-    print(response_2.json())
-    assert response.status_code == 250
+    assert response_2.status_code == 200
 
 
 @pytest.mark.anyio
 async def test_verify_send(client: AsyncClient):
     response = await client.post("/users/verify_send", headers=headers)
-    print(headers)
-    print(response.json())
-    assert response.status_code == 240
+    assert response.status_code == 200
 
 
 @pytest.mark.anyio
 async def test_verify_post(client: AsyncClient):
     data = {"access_token": "token_from_email", "token_type": "string"}
     response = await client.post("/users/verify_post", json=data, headers=headers)
-    print(headers)
-    print(response.json())
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_create_product(client: AsyncClient):
+    data = {"name": "test221", "price": 102, "photo": "test221"}
+    response = await client.post("/product/create_product", json=data, headers=headers)
+    print(response.json())
+    global p_id
+    p_id = response.json()["id"]
+    assert response.status_code == 200
+
+    data_2 = {"name": "test2212", "price": 1022, "photo": "test2221"}
+    response_2 = await client.post("/product/create_product", json=data_2, headers=headers)
+    global p2_id
+    p2_id = response_2.json()["id"]
+    assert response_2.status_code == 200
 
 
 @pytest.mark.anyio
 async def test_users_list(client: AsyncClient):
     response = await client.get("/users/user_list", headers=headers)
-    print(headers)
-    print(response.json())
     assert response.status_code == 200
 
 
@@ -153,42 +168,18 @@ async def test_user_active(client: AsyncClient):
 async def test_user_update(client: AsyncClient):
     data = {"full_name": "for_delete", "email": "for_delete@test.com", "phone": "+71992998877"}
     response = await client.put(f"/users/update/{u2_id}", json=data, headers=headers)
-    print(response.json())
     assert response.status_code == 200
-
-
-@pytest.mark.anyio
-async def test_user_delete(client: AsyncClient):
-    response = await client.delete(f"/users/delete/{u2_id}", headers=headers)
-    print(response.json())
-    assert response.status_code == 200
-
-
-@pytest.mark.anyio
-async def test_create_product(client: AsyncClient):
-    data = {"name": "test221", "price": 102, "photo": "test221"}
-    response = await client.post("/product/create_product", json=data, headers=headers)
-    print(response.json())
-    p_id = response.json()["id"]
-    assert response.status_code == 200
-
-    data_2 = {"name": "test2212", "price": 1022, "photo": "test2221"}
-    response_2 = await client.post("/product/create_product", json=data_2, headers=headers)
-    p2_id = response_2.json()["id"]
-    assert response_2.status_code == 200
 
 
 @pytest.mark.anyio
 async def test_product_list(client: AsyncClient):
     response = await client.get("/product/product_list", headers=headers)
-    print(response.json())
     assert response.status_code == 200
 
 
 @pytest.mark.anyio
 async def test_product_get(client: AsyncClient):
     response = await client.get(f"/product/{p_id}", headers=headers)
-    print(response.json())
     assert response.status_code == 200
 
 
@@ -196,28 +187,19 @@ async def test_product_get(client: AsyncClient):
 async def test_product_update(client: AsyncClient):
     data = {"name": "test_for_delete", "price": 103, "photo": "test32"}
     response = await client.put(f"/product/{p2_id}", json=data, headers=headers)
-    print(response.json())
     assert response.status_code == 200
 
 
 @pytest.mark.anyio
 async def test_product_active(client: AsyncClient):
     response = await client.post(f"/product/{p2_id}", headers=headers)
-    print(response.json())
-    assert response.status_code == 200
-
-
-@pytest.mark.anyio
-async def test_product_delete(client: AsyncClient):
-    response = await client.delete(f"/product/{p2_id}", headers=headers)
-    print(response.json())
     assert response.status_code == 200
 
 
 @pytest.mark.anyio
 async def test_basket_add(client: AsyncClient):
     response = await client.post(f"/product/deal/{p_id}&5", headers=headers)
-    print(response.json())
+    global d_id
     d_id = response.json()["id"]
     assert response.status_code == 200
 
@@ -247,3 +229,20 @@ async def test_basket_delete(client: AsyncClient):
     print(response_2.json())
     assert response_2.status_code == 200
 
+
+@pytest.mark.anyio
+async def test_product_delete(client: AsyncClient):
+    response = await client.delete(f"/product/{p2_id}", headers=headers)
+    assert response.status_code == 200
+
+    response_2 = await client.delete(f"/product/{p_id}", headers=headers)
+    assert response_2.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_user_delete(client: AsyncClient):
+    response = await client.delete(f"/users/delete/{u2_id}", headers=headers)
+    assert response.status_code == 200
+
+    response_2 = await client.delete(f"/users/delete/{u_id}", headers=headers)
+    assert response_2.status_code == 200
