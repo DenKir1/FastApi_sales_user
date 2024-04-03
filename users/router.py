@@ -2,7 +2,7 @@
 from fastapi_mail import MessageSchema, MessageType, FastMail
 from users.models import User, UserPydantic
 from starlette.exceptions import HTTPException
-from users.schemas import UserAuth, UserBase, TokenSchema, UserToken
+from users.schemas import UserAuth, UserBase, TokenSchema, UserToken, UserUpdate
 from fastapi import Depends, HTTPException, status, APIRouter
 from users.utils import get_user_by_email_or_phone, get_hashed_password, create_access_token, verify_password, \
     get_current_user, get_user_verify, create_jwt_for_verify_email, create_su_first, conf
@@ -33,7 +33,7 @@ async def create_user(data: UserAuth):
              phone=data.phone,
              hashed_password=get_hashed_password(data.password),
          )
-        await create_su_first(user_obj)
+        # await create_su_first(user_obj)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_418_IM_A_TEAPOT,
@@ -94,7 +94,7 @@ async def delete_user(user_id: int, current_user: User = Depends(get_current_use
 
 
 @router.put("/update/{user_id}", summary='Update User for Admin or Owner', response_model=UserPydantic)
-async def update_user(user_id: int, data: UserBase, current_user: User = Depends(get_current_user)):
+async def update_user(user_id: int, data: UserUpdate, current_user: User = Depends(get_current_user)):
     if current_user.is_superuser or user_id == current_user.id:
         user = await User.filter(id=user_id).first()
         if user:

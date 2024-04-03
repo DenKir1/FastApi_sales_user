@@ -74,7 +74,7 @@ async def product_is_active(p_id: int, current_user: User = Depends(get_current_
             await prod.save()
             return await Product_Pydantic.from_queryset_single(Product.get(id=p_id))
         else:
-            raise HTTPException(status_code=403, detail=f"Product {p_id} isn't found")
+            raise HTTPException(status_code=404, detail=f"Product {p_id} isn't found")
     else:
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
 
@@ -137,7 +137,7 @@ async def delete_basket(d_id: int, current_user: User = Depends(get_current_user
         if deleted_item:
             return HTTPException(status_code=200, detail=f"{current_user.email} deal {d_id or 'all'} was deleted")
         else:
-            return HTTPException(status_code=404, detail=f"{current_user.email} deal {d_id or 'all'} is empty")
+            raise HTTPException(status_code=404, detail=f"{current_user.email} deal {d_id or 'all'} is empty")
     else:
         raise HTTPException(status_code=401, detail=f"{current_user.email} is unauthorized user")
 

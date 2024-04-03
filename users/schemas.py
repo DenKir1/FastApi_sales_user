@@ -14,6 +14,12 @@ class UserBase(BaseModel):
     phone: constr(pattern=r'^\+7\d{10}$')
 
 
+class UserUpdate(BaseModel):
+
+    full_name: str
+    phone: constr(pattern=r'^\+7\d{10}$')
+
+
 class UserAuth(UserBase):
     password: constr(min_length=8)
     password_confirm: constr(min_length=8)
