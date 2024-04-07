@@ -1,11 +1,12 @@
+from typing import List
 
-from fastapi_mail import MessageSchema, MessageType, FastMail
-from users.models import User, UserPydantic
+from fastapi_mail import MessageSchema, MessageType
+from src.users.models import User, UserPydantic
 from starlette.exceptions import HTTPException
-from users.schemas import UserAuth, UserBase, TokenSchema, UserToken, UserUpdate
+from src.users.schemas import UserAuth, TokenSchema, UserToken, UserUpdate
 from fastapi import Depends, HTTPException, status, APIRouter
-from users.utils import get_user_by_email_or_phone, get_hashed_password, create_access_token, verify_password, \
-    get_current_user, get_user_verify, create_jwt_for_verify_email, create_su_first, conf
+from src.users.utils import get_user_by_email_or_phone, get_hashed_password, create_access_token, verify_password, \
+    get_current_user, get_user_verify, create_jwt_for_verify_email
 
 router = APIRouter(
     prefix="/users",
@@ -33,7 +34,6 @@ async def create_user(data: UserAuth):
              phone=data.phone,
              hashed_password=get_hashed_password(data.password),
          )
-        # await create_su_first(user_obj)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_418_IM_A_TEAPOT,
@@ -79,7 +79,7 @@ async def simple_send(current_user: User = Depends(get_current_user)):
         print(token)
         return HTTPException(status_code=200, detail=f"Letter for {current_user.email} was sent with Token")
     except Exception as ex:
-        raise HTTPException(status_code=404, detail=f" Something wrong {ex}")
+        raise HTTPException(status_code=404, detail=f" Something is wrong {ex}")
 
 
 @router.delete("/delete/{user_id}", summary='Delete User for Admin or Owner')
@@ -89,7 +89,7 @@ async def delete_user(user_id: int, current_user: User = Depends(get_current_use
     else:
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
     if not deleted_account:
-        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+        raise HTTPException(status_code=404, detail=f"User {user_id} isn't found")
     return HTTPException(status_code=200, detail=f"User {user_id} deleted")
 
 
@@ -101,12 +101,12 @@ async def update_user(user_id: int, data: UserUpdate, current_user: User = Depen
             await User.filter(id=user_id).update(**data.model_dump(exclude_unset=True))
             return await UserPydantic.from_queryset_single(User.get(id=user_id))
         else:
-            raise HTTPException(status_code=404, detail=f"User {user_id} don't found")
+            raise HTTPException(status_code=404, detail=f"User {user_id} isn't found")
     else:
         raise HTTPException(status_code=403, detail=f"User {current_user.email} forbidden")
 
 
-@router.get("/user_list", summary='Get Users for Staff')
+@router.get("/user_list", summary='Get Users for Staff', response_model=List[UserPydantic])
 async def get_users(current_user: User = Depends(get_current_user)):
     if current_user.is_staff:
         return await UserPydantic.from_queryset(User.all())
@@ -121,7 +121,7 @@ async def get_user(user_id: int, current_user: User = Depends(get_current_user))
         if user:
             return await UserPydantic.from_tortoise_orm(user)
         else:
-            raise HTTPException(status_code=404, detail=f"User {user_id} don't found")
+            raise HTTPException(status_code=404, detail=f"User {user_id} isn't found")
     else:
         raise HTTPException(status_code=403, detail=f"{current_user.email} forbidden")
 
@@ -148,11 +148,11 @@ async def set_is_verify(token: TokenSchema):
     token_user = await get_user_verify(token.access_token)
     if isinstance(token_user, User):
         if token_user.is_verified:
-            return HTTPException(status_code=200, detail=f"User {token_user.email} has already verified")
+            raise HTTPException(status_code=200, detail=f"User {token_user.email} has already verified")
         else:
             token_user.is_verified = True
             await token_user.save()
-            return HTTPException(status_code=200, detail=f"User {token_user.email} is verified")
+            raise HTTPException(status_code=200, detail=f"User {token_user.email} is verified")
     else:
         raise HTTPException(status_code=404, detail=f"Invalid token")
 

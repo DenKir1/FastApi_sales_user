@@ -1,9 +1,9 @@
 from fastapi_pagination import add_pagination
 from tortoise.contrib.fastapi import register_tortoise
-import config
+from src import config
 from fastapi import FastAPI
-from sales.router import router as router_product
-from users.router import router as router_user
+from src.sales.router import router as router_product
+from src.users.router import router as router_user
 
 app = FastAPI(title="SALES")
 add_pagination(app)

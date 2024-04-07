@@ -21,11 +21,11 @@ DATABASE_CONFIG = {
             "default_connection": "default",
         },
         "users": {
-            "models": ["users.models"],
+            "models": ["src.users.models"],
             "default_connection": "default",
         },
         "sales": {
-            "models": ["sales.models"],
+            "models": ["src.sales.models"],
             "default_connection": "default",
         },
     },

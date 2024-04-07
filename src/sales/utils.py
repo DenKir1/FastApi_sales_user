@@ -1,5 +1,5 @@
 from typing import overload
-from sales.models import Deal
+from src.sales.models import Deal
 
 
 @overload

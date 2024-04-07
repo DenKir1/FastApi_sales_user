@@ -1,5 +1,8 @@
+from typing import List
 
-from pydantic import BaseModel, conint
+from pydantic import BaseModel, conint, ConfigDict
+
+from src.users.schemas import UserAll
 
 
 class ProductIn(BaseModel):
@@ -8,7 +11,13 @@ class ProductIn(BaseModel):
     photo: str
 
 
+class ProductAll(ProductIn):
+    id: int
+
+
 class DealOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: int
     product_id: int

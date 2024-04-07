@@ -4,13 +4,12 @@ from datetime import datetime, timedelta
 from typing import Union, Any
 import jwt
 from starlette import status
-from users.models import User
-from users.schemas import TokenPayload
+from src.users.models import User
+from src.users.schemas import TokenPayload
 from fastapi import HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi_mail import ConnectionConfig
-import config
-
+from src import config
 
 conf = ConnectionConfig(
     MAIL_USERNAME=config.EMAIL_HOST_USER,
