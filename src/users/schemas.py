@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, constr, model_validator
+from pydantic import BaseModel, EmailStr, constr, model_validator, ConfigDict
 
 
 class UserToken(BaseModel):
@@ -8,7 +8,7 @@ class UserToken(BaseModel):
 
 
 class UserBase(BaseModel):
-
+    model_config = ConfigDict(from_attributes=True)
     full_name: str
     email: EmailStr
     phone: constr(pattern=r'^\+7\d{10}$')
@@ -34,6 +34,7 @@ class UserAuth(UserBase):
 
 
 class UserAll(UserBase):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     is_active: bool = True
     is_superuser: bool = False

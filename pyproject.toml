@@ -8,3 +8,6 @@ pythonpath = [
   ".", "src",
 ]
 asyncio_mode="auto"
+filterwarnings = [
+  "ignore::DeprecationWarning"
+]

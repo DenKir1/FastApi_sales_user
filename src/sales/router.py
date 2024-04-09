@@ -1,5 +1,6 @@
 
 from fastapi import APIRouter, Depends
+
 from src.sales.models import Product_Pydantic, Product, Deal
 from src.sales.schemas import ProductIn, DealOut
 from starlette.exceptions import HTTPException
@@ -103,7 +104,7 @@ async def add_product_to_deal(product_id: int, count_product: int, current_user:
                 "count": count_product,
                 "price": prod.price * count_product}
             obj = await Deal.create(**deal_)
-            return DealOut.model_validate(obj)
+            return DealOut.from_orm(obj)
         else:
             raise HTTPException(status_code=403, detail=f"Product {product_id} not found")
     else:
@@ -116,9 +117,19 @@ async def get_basket(d_id: int, current_user: User = Depends(get_current_user)):
         if d_id == 0:
             basket = await Deal.filter(user=current_user)
         else:
-            basket = await Deal.filter(user=current_user, id=d_id).first()
+            basket = await Deal.filter(user=current_user, id=d_id)
         if basket:
             total = total_func(basket)
+            # ba = []
+            # for b in basket:
+            #     deal_ = {
+            #         "id": b.id,
+            #         "user": current_user,
+            #         "product": await Product.filter(id=b.product_id).first(),
+            #         "count": b.count,
+            #         "price": b.price}
+            #     ba.append(DealOut.from_orm(deal_))
+            # return {"basket": ba, "total": total}
             return {"basket": basket, "total": total}
         else:
             raise HTTPException(status_code=404, detail=f"{d_id} don't exist or {current_user.email} basket is empty")
