@@ -1,8 +1,5 @@
-from typing import List
 
 from pydantic import BaseModel, conint, ConfigDict
-
-from src.users.schemas import UserAll
 
 
 class ProductIn(BaseModel):

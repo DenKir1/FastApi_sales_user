@@ -116,11 +116,11 @@ async def get_user_verify(token: str) -> User:
         raise HTTPException(status_code=404, detail=f"Invalid token")
 
 
-async def create_su_first(user: User) -> None:
-    """Three first users will become admins (need for test)"""
-    if user.id < 4:
-        user.is_active = True
-        user.is_verified = True
-        user.is_staff = True
-        user.is_superuser = True
-        await user.save()
+# async def create_su_first(user: User) -> None:
+#     """Three first users will become admins (need for test)"""
+#     if user.id < 4:
+#         user.is_active = True
+#         user.is_verified = True
+#         user.is_staff = True
+#         user.is_superuser = True
+#         await user.save()
