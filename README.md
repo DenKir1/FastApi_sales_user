@@ -11,7 +11,7 @@
     Совершить миграции (aerich init-db);
     Команда для запуска (uvicorn src/main:app --reload);
     Адрес интерфейса http://127.0.0.1:8000/docs;
-    Команда для запуска тестов (pytest /tests -v).
+    Команда для запуска тестов (pytest tests/ -v).
 
 
 Методы, доступные неавторизованным пользователям: регистрация, авторизация
@@ -34,7 +34,7 @@ DO STEPS FOR START:
     Perform migrations (aerich init-db);
     Launch command (uvicorn src/main:app --reload);
     SWAGGER documentation address http://127.0.0.1:8000/docs;
-    Command to run tests (pytest /tests -v).
+    Command to run tests (pytest tests/ -v).
 
 Unauthorized user's methods: a registration, an authorization.
 
