@@ -25,7 +25,7 @@ class UserAuth(UserBase):
     password_confirm: constr(min_length=8)
 
     @model_validator(mode='before')
-    def hashed_password_validation(self):
+    def password_validation(self):
         if not any(char.isupper() for char in self["password"]):
             raise ValueError('No Upper letter!')
         if not any(char in '$%&!:.' for char in self["password"]):
