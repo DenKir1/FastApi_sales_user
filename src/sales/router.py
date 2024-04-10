@@ -120,17 +120,16 @@ async def get_basket(d_id: int, current_user: User = Depends(get_current_user)):
             basket = await Deal.filter(user=current_user, id=d_id)
         if basket:
             total = total_func(basket)
-            # ba = []
-            # for b in basket:
-            #     deal_ = {
-            #         "id": b.id,
-            #         "user": current_user,
-            #         "product": await Product.filter(id=b.product_id).first(),
-            #         "count": b.count,
-            #         "price": b.price}
-            #     ba.append(DealOut.from_orm(deal_))
-            # return {"basket": ba, "total": total}
-            return {"basket": basket, "total": total}
+            basket_all = []
+            for b in basket:
+                deal_ = {
+                    "id": b.id,
+                    "user": await b.user,
+                    "product": await b.product,
+                    "count": b.count,
+                    "price": b.price}
+                basket_all.append(DealOut.from_orm(deal_))
+            return {"basket": basket_all, "total": total}
         else:
             raise HTTPException(status_code=404, detail=f"{d_id} don't exist or {current_user.email} basket is empty")
     else:
