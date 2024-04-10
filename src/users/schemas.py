@@ -27,9 +27,9 @@ class UserAuth(UserBase):
     @model_validator(mode='before')
     def hashed_password_validation(self):
         if not any(char.isupper() for char in self["password"]):
-            raise ValueError('Пароль должен содержать заглавную букву!')
+            raise ValueError('No Upper letter!')
         if not any(char in '$%&!:.' for char in self["password"]):
-            raise ValueError('Пароль должен содержать специальный символ: $%&!:.')
+            raise ValueError('No symbols $%&!:.')
         return self
 
 
